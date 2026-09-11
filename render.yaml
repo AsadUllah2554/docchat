@@ -1,0 +1,31 @@
+# Render blueprint for the API. The web app deploys to Vercel with root directory `web`.
+services:
+  - type: web
+    name: docchat-api
+    runtime: node
+    rootDir: api
+    plan: free
+    buildCommand: npm ci && npm run build && npm run warm-model
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: SEED_ON_BOOT
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

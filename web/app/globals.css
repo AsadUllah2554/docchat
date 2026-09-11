@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  --color-slate: #101418;
+  --color-slate-lift: #181d23;
+  --color-chalk: #e8e9e6;
+  --color-chalk-dim: #8c9299;
+  --color-edge: #262c33;
+  --color-cite: #7fa6c4;
+  --color-absent: #c4a45c;
+  --color-danger: #d98b7a;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --text-12: 12px;
+  --text-12--line-height: 17px;
+  --text-13: 13px;
+  --text-13--line-height: 20px;
+  --text-15: 15px;
+  --text-15--line-height: 22px;
+  --text-17: 17px;
+  --text-17--line-height: 1.65;
+  --text-19: 19px;
+  --text-19--line-height: 27px;
+  --text-25: 25px;
+  --text-25--line-height: 32px;
+}
+
+html {
+  background: var(--color-slate);
+  color: var(--color-chalk);
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 22px;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-cite);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgb(127 166 196 / 0.35);
+}
+
+/* Thin, quiet scrollbars for the two scrolling columns. */
+.scroll-quiet {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-edge) transparent;
+}

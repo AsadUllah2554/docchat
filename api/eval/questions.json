@@ -1,0 +1,22 @@
+[
+  { "question": "What is the notice period for terminating a retainer?", "source": "master-services-agreement.md", "contains": "thirty (30) days' written notice" },
+  { "question": "How long do I have to pay an invoice?", "source": "master-services-agreement.md", "contains": "payable within 14 days" },
+  { "question": "What interest do you charge if we pay late?", "source": "master-services-agreement.md", "contains": "1.5% per month" },
+  { "question": "When do we become the owner of the designs and code you deliver?", "source": "master-services-agreement.md", "contains": "transfers to the Client on payment in full" },
+  { "question": "How long is the warranty for bugs after launch?", "source": "master-services-agreement.md", "contains": "For 30 days after launch" },
+  { "question": "What is the maximum amount the Studio can be liable for?", "source": "master-services-agreement.md", "contains": "six months before the event" },
+  { "question": "How many hours a month does the Growth plan include?", "source": "retainer-and-support-terms.md", "contains": "| Growth | 20 |" },
+  { "question": "What happens to retainer hours we don't use?", "source": "retainer-and-support-terms.md", "contains": "roll over to the following month only" },
+  { "question": "Can we pause our retainer over the summer?", "source": "retainer-and-support-terms.md", "contains": "up to two consecutive months" },
+  { "question": "What compensation do we get if you miss an urgent response time?", "source": "retainer-and-support-terms.md", "contains": "10% of that month's Retainer fee" },
+  { "question": "How long do you keep invoices and financial records?", "source": "privacy-notice.md", "contains": "seven years" },
+  { "question": "Which countries is our personal data stored in?", "source": "privacy-notice.md", "contains": "United Kingdom or the European Economic Area" },
+  { "question": "How many rounds of design changes are included?", "source": "project-delivery-handbook.md", "contains": "up to two rounds of revisions" },
+  { "question": "How long do we have to test the site before it counts as accepted?", "source": "project-delivery-handbook.md", "contains": "10 Business Days to test" },
+  { "question": "How quickly are critical security updates to dependencies applied?", "source": "information-security-policy.md", "contains": "within seven days of release" },
+  { "question": "Is any setup time included when a retainer starts?", "source": "client-onboarding-guide.md", "contains": "up to three hours of setup time" },
+  { "question": "Does the Studio carry professional indemnity insurance?", "answerable": false },
+  { "question": "Do you offer discounts for charities or nonprofits?", "answerable": false },
+  { "question": "How much does managed hosting cost per month?", "answerable": false },
+  { "question": "Who won the 2022 football World Cup?", "answerable": false }
+]

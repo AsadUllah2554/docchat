@@ -24,15 +24,34 @@ Retrieval, from `npm run eval -- --sizes 300,500,800` in `api/`: 20 hand-written
 - **300-token chunks ranked the right chunk lower more often** (MRR 0.79 against 0.84). The question about owning the delivered work found its clause only at rank 8.
 - **The refusal threshold is 0.60.** On these 20 questions the lowest answerable top match scored 0.647 and two of the four unanswerable questions scored 0.49 and 0.42, so those two are refused before any model call. The other two ("insurance", "hosting price") score 0.61–0.64 because the corpus has related text. They reach the model, which is instructed to reply `NOT_IN_DOCUMENTS` when the excerpts do not answer the question; that becomes a refusal too. The threshold was not tuned higher to catch them, because refusing a real question is worse than one extra model call.
 
-Full pipeline, from `npm run eval -- --answers` with a live model:
+Full pipeline, from `npm run eval -- --answers` against the deployed database with Groq serving the answers:
 
 | Metric | Value |
 |---|---|
-| Answerable questions answered with a correct citation | _run with an API key_ |
-| Unanswerable questions refused | |
-| Refusals made without calling the model | |
-| Avg latency (answered) | |
-| Avg estimated cost per answer | |
+| Answerable questions answered correctly | 16 of 16 |
+| ...with an inline citation | 14 of 16 |
+| Answerable questions wrongly refused | 0 of 16 |
+| Unanswerable questions refused | 3 of 4 |
+| Refusals made before any model call | 2 |
+| Errors | 0 |
+| Avg estimated cost per answered question | $0.0007 |
+| Avg latency, answered questions | 21s |
+
+Three of those need context.
+
+**The fourth unanswerable question was not a failure.** Asked "how much does managed hosting
+cost per month", the model answered "hosting is billed separately from the Retainer
+[chunk:18]. However, the provided documents do not state the exact monthly cost" — the
+supported part, with a citation, plus an explicit statement of what the documents do not say.
+That is what the prompt asks for. Nothing was fabricated in any of the 20 answers.
+
+**Two answers were correct but uncited.** Citation is instructed, not enforced, so the model
+occasionally states a correct fact without the `[chunk:id]` tag. The UI reports the count of
+cited sources under every answer, so an uncited answer is visible rather than silent.
+
+**Latency** is dominated by free-tier waits: this run had exhausted Groq's daily token
+allowance, so most questions waited for the time the provider asked for before being answered.
+Retrieval itself takes about 0.5s, and an unthrottled answer streams in about 3 seconds.
 
 ## Failure cases
 
@@ -141,7 +160,7 @@ Without an API key, retrieval, the sources panel and below-threshold refusals al
 
 ## Free-tier caveat
 
-The demo runs on free tiers. Render's free web services sleep after 15 minutes idle, so the first request can take 30–60 seconds while the API wakes and loads the embedding model. Gemini and Groq have daily quotas: when both are spent, retrieval and refusals keep working but answers fail until the quota resets. Neon's free tier suspends an idle database, so the first query after a quiet spell waits for it to wake. Uploaded documents are visible to every demo user, so do not upload anything private.
+The demo runs on free tiers. Render's free web services sleep after 15 minutes idle, so the first request can take 30–60 seconds while the API wakes and loads the embedding model. The free tiers are the binding constraint: Groq allows 8,000 tokens a minute (about two questions), and Gemini's free tier allows 20 requests a day for `gemini-3.6-flash`, which is why Groq leads and the cheaper `gemini-3.5-flash-lite` is the fallback. A 429 waits for the time the provider asks for, so a burst of questions queues rather than failing. When both are spent, retrieval, sources and refusals keep working and only the generated answer fails. Neon's free tier suspends an idle database, so the first query after a quiet spell waits for it to wake. Uploaded documents are visible to every demo user, so do not upload anything private.
 
 ## Known issues
 

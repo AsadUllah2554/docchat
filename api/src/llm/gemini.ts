@@ -10,7 +10,7 @@ const thinkingFor = (model: string) =>
 
 export function createGeminiProvider(
   apiKey = process.env.GEMINI_API_KEY,
-  model = process.env.GEMINI_MODEL ?? "gemini-3.6-flash",
+  model = process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
 ): LLMProvider {
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
   const ai = new GoogleGenAI({ apiKey });

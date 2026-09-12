@@ -13,9 +13,17 @@ const FACTORIES: Record<string, () => LLMProvider> = {
 };
 
 const MAX_CONSECUTIVE_429 = 2;
+/** Cap on a provider's own retry-after hint, so one request cannot stall a page load. */
+const MAX_RETRY_AFTER_MS = Number(process.env.LLM_MAX_RETRY_AFTER_MS ?? 20_000);
 const MAX_SERVER_ERRORS = 3;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** The provider's own hint when it gave one (free tiers are limited per minute), else backoff. */
+function waitFor(err: ProviderError, failures: number): number {
+  if (err.retryAfterMs !== undefined) return Math.min(err.retryAfterMs + 250, MAX_RETRY_AFTER_MS);
+  return backoff(failures);
+}
 
 function backoff(failures: number): number {
   const base = Number(process.env.LLM_BACKOFF_MS ?? 1000);
@@ -51,7 +59,7 @@ async function tryChain<R>(
         if (err.isRateLimit) {
           consecutive429++;
           if (consecutive429 >= MAX_CONSECUTIVE_429) break;
-          await sleep(backoff(consecutive429));
+          await sleep(waitFor(err, consecutive429));
         } else if (err.isRetryable) {
           consecutive429 = 0;
           serverErrors++;

@@ -1,5 +1,5 @@
 import Groq from "groq-sdk";
-import { OutputParseError, ProviderError } from "./errors.js";
+import { OutputParseError, parseRetryAfter, ProviderError } from "./errors.js";
 import { estimateCost } from "./pricing.js";
 import { streamWithMeta, type CompleteOptions, type LLMProvider, type LLMResult, type StreamOptions } from "./types.js";
 
@@ -12,10 +12,12 @@ export function createGroqProvider(
   // Retries are handled one level up, where fallback decisions are made.
   const client = new Groq({ apiKey, maxRetries: 0 });
 
-  const wrap = (err: unknown) =>
-    err instanceof Groq.APIError
-      ? new ProviderError("groq", err.status, err.message)
-      : new ProviderError("groq", undefined, (err as Error).message);
+  const wrap = (err: unknown) => {
+    if (!(err instanceof Groq.APIError)) return new ProviderError("groq", undefined, (err as Error).message);
+    const error = new ProviderError("groq", err.status, err.message);
+    error.retryAfterMs = parseRetryAfter(err.message, err.headers);
+    return error;
+  };
 
   return {
     name: "groq",

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ProviderError, streamWithMeta, withFallback, type LLMProvider } from "../src/llm/index.js";
+import { parseRetryAfter } from "../src/llm/errors.js";
 
 function provider(name: string, script: (Error | string)[]) {
   let calls = 0;
@@ -45,5 +46,25 @@ describe("streaming fallback", () => {
     await drain(stream.textStream);
     expect((await stream.meta).fallbackFrom).toBeUndefined();
     expect(groq.calls()).toBe(0);
+  });
+});
+
+describe("parseRetryAfter", () => {
+  it("reads the retry-after header in seconds", () => {
+    expect(parseRetryAfter("", new Headers({ "retry-after": "18" }))).toBe(18_000);
+  });
+
+  it("reads the wait out of a Groq rate-limit message", () => {
+    const message =
+      'Rate limit reached for model `openai/gpt-oss-20b` on tokens per minute (TPM): Limit 8000, Used 6476, Requested 3925. Please try again in 18.0075s.';
+    expect(parseRetryAfter(message)).toBe(18_008);
+  });
+
+  it("reads Gemini's retryDelay", () => {
+    expect(parseRetryAfter('{"error":{"details":[{"retryDelay":"27s"}]}}')).toBe(27_000);
+  });
+
+  it("returns undefined when the provider gave no hint", () => {
+    expect(parseRetryAfter("Internal error")).toBeUndefined();
   });
 });

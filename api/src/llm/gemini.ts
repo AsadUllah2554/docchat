@@ -1,5 +1,5 @@
 import { ApiError, GoogleGenAI, ThinkingLevel } from "@google/genai";
-import { OutputParseError, ProviderError } from "./errors.js";
+import { OutputParseError, parseRetryAfter, ProviderError } from "./errors.js";
 import { estimateCost } from "./pricing.js";
 import { streamWithMeta, type CompleteOptions, type LLMProvider, type LLMResult, type StreamOptions } from "./types.js";
 
@@ -16,10 +16,12 @@ export function createGeminiProvider(
   const ai = new GoogleGenAI({ apiKey });
   const thinking = thinkingFor(model);
 
-  const wrap = (err: unknown) =>
-    err instanceof ApiError
-      ? new ProviderError("gemini", err.status, err.message)
-      : new ProviderError("gemini", undefined, (err as Error).message);
+  const wrap = (err: unknown) => {
+    if (!(err instanceof ApiError)) return new ProviderError("gemini", undefined, (err as Error).message);
+    const error = new ProviderError("gemini", err.status, err.message);
+    error.retryAfterMs = parseRetryAfter(err.message);
+    return error;
+  };
 
   return {
     name: "gemini",

@@ -6,7 +6,9 @@ DocChat answers questions over a set of business documents, with retrieval you c
 
 ![Answer streaming with the sources panel open and a citation hovered](docs/screenshots/chat.png)
 
-**Live demo:** _add URL after deploy_ · demo login `demo@docchat.dev` / `docchat-demo` (shown on the login screen) · **API docs:** _API URL_/docs
+**Live demo:** https://docchat-eta.vercel.app · demo login `demo@docchat.dev` / `docchat-demo` (shown on the login screen) · **API docs:** `<api-url>/docs`
+
+> The web app is deployed; the API needs a host that runs a Node process (see Deploying). Set `NEXT_PUBLIC_API_URL` to it and redeploy the web app.
 
 ## Numbers
 
@@ -39,7 +41,7 @@ Each one is covered by a test in `api/tests/`.
 1. **Question outside the corpus → explicit refusal, no fabricated answer.** There are two layers. Retrieval refuses clearly off-topic questions (case 2). For questions where related text exists but does not answer them, the model is told to reply with exactly `NOT_IN_DOCUMENTS`. The server holds back the first characters of every stream until it knows they are not that sentinel, so a refusal never flashes up as text, and logs it with `refusal_reason: model`.
 2. **All retrieved chunks below the threshold → say so, do not answer.** If the best match scores under 0.60, the API streams a `data-refusal` part, logs `refused: true, refusal_reason: below_threshold`, and never calls the model. The UI shows the closest score and the threshold, and says no answer was generated.
 3. **File with no extractable text → clear ingestion error.** Under 100 non-whitespace characters (a scanned PDF, an empty file) gives 422: "No extractable text in this file. Scanned PDFs are not supported (no OCR)."
-4. **Provider rate limited → fallback, recorded.** Exponential backoff on 429 and 5xx; after two consecutive 429s the request moves from Gemini to Groq (or the reverse). This covers everything up to the first streamed token. `fallback_from` is stored on the Query row and shown under the answer.
+4. **Provider rate limited → fallback, recorded.** On a 429 the provider's own retry hint is honoured (Groq's free tier caps tokens per minute and replies "try again in 18s"), capped at 20 seconds; otherwise exponential backoff. After two consecutive 429s the request moves to the other provider. This covers everything up to the first streamed token. `fallback_from` is stored on the Query row and shown under the answer.
 5. **Unauthorised request → 401.** Every endpoint except `/auth/*`, `/health` and `/docs` needs a bearer token.
 6. **Non-admin deleting a document → 403.** Registration only creates members; admins come from the seed.
 
@@ -96,7 +98,7 @@ OpenAPI 3.1 spec at `/openapi.json`, Swagger UI at `/docs`. Rate limits: 30 auth
 
 **Web:** Next.js 16, React 19, Tailwind CSS 4, Vercel AI SDK (`useChat`). Deployed on Vercel.
 
-**Models:** Gemini 2.5 Flash, with Groq as fallback.
+**Models:** Groq `openai/gpt-oss-20b` as primary, Gemini 3.6 Flash as fallback. Groq is primary because Gemini's free tier gives a small daily allowance; either can lead by setting `LLM_PROVIDER`.
 
 ## Setup
 
@@ -130,7 +132,7 @@ Without an API key, retrieval, the sources panel and below-threshold refusals al
 ### Deploying
 
 1. **Database:** create a Postgres database with pgvector available — Neon or Supabase both work — and put its pooled connection string in `DATABASE_URL`. `npm run db:migrate` enables the `vector` extension itself.
-2. **API:** any host that runs a Node process works (Render, Railway, Fly.io, Koyeb). `render.yaml` is ready for Render: create a Blueprint from it, then set `DATABASE_URL`, `WEB_ORIGIN` (the Vercel URL), `GEMINI_API_KEY`, `GROQ_API_KEY`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`. With `SEED_ON_BOOT=true` the first boot runs migrations, creates the demo user and ingests the corpus, so the demo works immediately. The build step downloads the embedding model.
+2. **API:** any host that runs a Node process works. The service uses about 260 MB of memory once the embedding model is loaded, so a 512 MB free instance is enough. `render.yaml` is ready for Render: create a Blueprint from it, then set `DATABASE_URL`, `WEB_ORIGIN` (the Vercel URL), `GEMINI_API_KEY`, `GROQ_API_KEY`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`. With `SEED_ON_BOOT=true` the first boot runs migrations, creates the demo user and ingests the corpus, so the demo works immediately. The build step downloads the embedding model.
 3. **Web:** import the repo into Vercel with root directory `web`, and set `NEXT_PUBLIC_API_URL` to the Render URL.
 
 ## Corpus

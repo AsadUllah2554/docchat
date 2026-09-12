@@ -92,7 +92,7 @@ OpenAPI 3.1 spec at `/openapi.json`, Swagger UI at `/docs`. Rate limits: 30 auth
 
 ## Stack
 
-**API:** Express 5, TypeScript, Zod, Drizzle ORM with committed migrations, Postgres + pgvector (Supabase), transformers.js, JWT + bcrypt, express-rate-limit, Helmet, swagger-ui-express, Vitest + Supertest. Deployed on Render.
+**API:** Express 5, TypeScript, Zod, Drizzle ORM with committed migrations, Postgres + pgvector (Neon), transformers.js, JWT + bcrypt, express-rate-limit, Helmet, swagger-ui-express, Vitest + Supertest. Deployed on Render.
 
 **Web:** Next.js 16, React 19, Tailwind CSS 4, Vercel AI SDK (`useChat`). Deployed on Vercel.
 
@@ -129,8 +129,8 @@ Without an API key, retrieval, the sources panel and below-threshold refusals al
 
 ### Deploying
 
-1. **Database:** create a Supabase project, and put its Session pooler connection string (port 5432) in `DATABASE_URL`. Migrations enable the `vector` extension.
-2. **API:** create a Render Blueprint from `render.yaml`, then set `DATABASE_URL`, `WEB_ORIGIN` (the Vercel URL), `GEMINI_API_KEY`, `GROQ_API_KEY`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`. With `SEED_ON_BOOT=true` the first boot runs migrations, creates the demo user and ingests the corpus, so the demo works immediately. The build step downloads the embedding model.
+1. **Database:** create a Postgres database with pgvector available — Neon or Supabase both work — and put its pooled connection string in `DATABASE_URL`. `npm run db:migrate` enables the `vector` extension itself.
+2. **API:** any host that runs a Node process works (Render, Railway, Fly.io, Koyeb). `render.yaml` is ready for Render: create a Blueprint from it, then set `DATABASE_URL`, `WEB_ORIGIN` (the Vercel URL), `GEMINI_API_KEY`, `GROQ_API_KEY`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`. With `SEED_ON_BOOT=true` the first boot runs migrations, creates the demo user and ingests the corpus, so the demo works immediately. The build step downloads the embedding model.
 3. **Web:** import the repo into Vercel with root directory `web`, and set `NEXT_PUBLIC_API_URL` to the Render URL.
 
 ## Corpus
@@ -139,7 +139,7 @@ Without an API key, retrieval, the sources panel and below-threshold refusals al
 
 ## Free-tier caveat
 
-The demo runs on free tiers. Render's free web services sleep after 15 minutes idle, so the first request can take 30–60 seconds while the API wakes and loads the embedding model. Gemini and Groq have daily quotas: when both are spent, retrieval and refusals keep working but answers fail until the quota resets. Supabase free projects pause after a week without traffic. Uploaded documents are visible to every demo user, so do not upload anything private.
+The demo runs on free tiers. Render's free web services sleep after 15 minutes idle, so the first request can take 30–60 seconds while the API wakes and loads the embedding model. Gemini and Groq have daily quotas: when both are spent, retrieval and refusals keep working but answers fail until the quota resets. Neon's free tier suspends an idle database, so the first query after a quiet spell waits for it to wake. Uploaded documents are visible to every demo user, so do not upload anything private.
 
 ## Known issues
 

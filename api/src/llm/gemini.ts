@@ -1,16 +1,20 @@
-import { ApiError, GoogleGenAI } from "@google/genai";
+import { ApiError, GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { OutputParseError, ProviderError } from "./errors.js";
 import { estimateCost } from "./pricing.js";
 import { streamWithMeta, type CompleteOptions, type LLMProvider, type LLMResult, type StreamOptions } from "./types.js";
 
+const thinkingFor = (model: string) =>
+  // Gemini 3.x rejects thinkingBudget (400) and uses thinkingLevel instead. Neither
+  // extraction nor grounded answering benefits from thinking; it only adds latency and cost.
+  /^gemini-2\./.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : { thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL } };
+
 export function createGeminiProvider(
   apiKey = process.env.GEMINI_API_KEY,
-  model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
+  model = process.env.GEMINI_MODEL ?? "gemini-3.6-flash",
 ): LLMProvider {
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
   const ai = new GoogleGenAI({ apiKey });
-  // Answers are grounded in retrieved text; thinking on 2.5 Flash only adds latency and cost.
-  const thinking = model.includes("2.5-flash") ? { thinkingConfig: { thinkingBudget: 0 } } : {};
+  const thinking = thinkingFor(model);
 
   const wrap = (err: unknown) =>
     err instanceof ApiError

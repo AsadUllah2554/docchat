@@ -2,6 +2,11 @@
 // cost nothing, but the estimate shows what the same traffic would cost in production.
 // Check provider pricing pages before quoting these numbers.
 const PRICES: Record<string, [number, number]> = {
+  // Gemini 3.6 Flash is $0.75/$3.75 until 31 Dec 2026, then $1.50/$7.50.
+  "gemini-3.6-flash": [0.75, 3.75],
+  "gemini-flash-latest": [0.75, 3.75], // alias: repoints as Google releases models
+  "gemini-3.5-flash": [1.5, 9],
+  "gemini-3.5-flash-lite": [0.3, 2.5],
   "gemini-2.5-flash": [0.3, 2.5],
   "gemini-2.5-flash-lite": [0.1, 0.4],
   "gemini-2.5-pro": [1.25, 10],

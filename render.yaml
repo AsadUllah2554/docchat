@@ -1,7 +1,7 @@
 # Render blueprint for the API. The web app deploys to Vercel with root directory `web`.
 services:
   - type: web
-    name: docchat-api
+    name: docchat-api-asadullah
     runtime: node
     rootDir: api
     plan: free

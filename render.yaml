@@ -5,7 +5,8 @@ services:
     runtime: node
     rootDir: api
     plan: free
-    buildCommand: npm ci && npm run build && npm run warm-model
+    region: virginia
+    buildCommand: npm ci --include=dev && npm run build && npm run warm-model
     startCommand: npm start
     healthCheckPath: /health
     envVars:

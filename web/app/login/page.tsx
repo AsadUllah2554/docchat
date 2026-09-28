@@ -20,7 +20,8 @@ function describe(err: unknown): Failure {
   if (err.kind === "timeout") return { message: err.message, retry: true };
   if (err.kind === "network") return { message: err.message, retry: true };
   if (err.status === 401) return { message: "Email or password not recognised.", retry: false };
-  if (err.status === 429) return { message: "Too many attempts. Wait a moment and try again.", retry: false };
+  // The limiter knows its own window; a generic "wait a moment" would be a guess, and wrong.
+  if (err.status === 429) return { message: err.message, retry: false };
   if (err.status >= 500) return { message: `The API returned an error (${err.status}).`, retry: true };
   return { message: err.message, retry: false };
 }

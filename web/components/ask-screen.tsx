@@ -65,10 +65,16 @@ const textOf = (m: ChatMessage) => m.parts.map((p) => (p.type === "text" ? p.tex
 
 function errorText(error: Error | undefined): string | null {
   if (!error) return null;
+  // The transport hands us the raw response body. When it is JSON the API's own wording is the
+  // most accurate thing we have; when it is JSON without an `error` field, showing it raw puts
+  // literal `{}` on screen, so fall back to plain English instead.
+  const fallback = "The answer could not be generated. Try again.";
   try {
-    return JSON.parse(error.message).error ?? error.message;
+    const parsed: unknown = JSON.parse(error.message);
+    const message = (parsed as { error?: unknown } | null)?.error;
+    return typeof message === "string" && message ? message : fallback;
   } catch {
-    return error.message || "The answer could not be generated. Try again.";
+    return error.message || fallback;
   }
 }
 

@@ -55,3 +55,31 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--color-edge) transparent;
 }
+
+/*
+ * In-button activity indicator. Under reduced motion it stops rotating and closes into a plain
+ * ring: still visibly an indicator, with the status text carrying the progress instead.
+ */
+@keyframes docchat-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: docchat-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    border-right-color: currentColor;
+    opacity: 0.55;
+  }
+}

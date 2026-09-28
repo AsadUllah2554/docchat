@@ -3,9 +3,11 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { api, API_URL, getSession } from "@/lib/api";
+import { api, API_URL, getSession, REQUEST_TIMEOUT_MS } from "@/lib/api";
 import type { ChatMessage, DocumentSummary, MetaData, RefusalData, SourcesData } from "@/lib/types";
 import { formatLatency } from "@/lib/format";
+import { useColdStartMessage } from "@/lib/use-cold-start";
+import { isApiWarm } from "@/lib/warm";
 import { AnswerText } from "./answer-text";
 import { AppHeader } from "./app-header";
 import { RefusalCard } from "./refusal-card";
@@ -89,6 +91,25 @@ export function AskScreen() {
           const token = getSession()?.token;
           return token ? { Authorization: `Bearer ${token}` } : {};
         },
+        // The API sleeps after 15 minutes idle, so the first question of a session can be answering
+        // a cold instance. Give it the same 45 seconds the rest of the app allows. The timer is
+        // cleared the moment the response head arrives, so a long answer is never cut off mid-stream.
+        fetch: async (input, init) => {
+          const controller = new AbortController();
+          const abort = () => controller.abort();
+          init?.signal?.addEventListener("abort", abort);
+          const timer = setTimeout(abort, REQUEST_TIMEOUT_MS);
+          try {
+            return await fetch(input, { ...init, signal: controller.signal });
+          } catch (err) {
+            if (init?.signal?.aborted) throw err; // the caller stopped it, not us
+            if (controller.signal.aborted) throw new Error("The API did not respond in 45 seconds. It may be down.");
+            throw new Error("Could not reach the API. It may still be waking up.");
+          } finally {
+            clearTimeout(timer);
+            init?.signal?.removeEventListener("abort", abort);
+          }
+        },
         // The API answers one question at a time; there is no conversation memory.
         prepareSendMessagesRequest: ({ messages }) => ({ body: { question: textOf(messages[messages.length - 1]) } }),
       }),
@@ -106,6 +127,11 @@ export function AskScreen() {
   const turns = toTurns(messages);
   const busy = status === "submitted" || status === "streaming";
   const shown = turns.find((t) => t.question.id === activeTurn) ?? turns[turns.length - 1];
+
+  // Only the first question of a session can be waiting on a sleeping instance: once anything has
+  // come back, the API is awake and "Searching the index." is the honest description again.
+  const answeredOnce = turns.some((t) => t.meta || t.refusal);
+  const waking = useColdStartMessage(status === "submitted", answeredOnce || isApiWarm(), messages.length);
 
   useEffect(() => {
     threadEnd.current?.scrollIntoView({ block: "end", behavior: reduceMotion ? "auto" : "smooth" });
@@ -201,9 +227,22 @@ export function AskScreen() {
                           />
                         )
                       ) : last && busy ? (
-                        <p className="text-13 text-chalk-dim">{turn.sources ? "Writing the answer." : "Searching the index."}</p>
+                        <p className="text-13 text-chalk-dim">
+                          {waking ?? (turn.sources ? "Writing the answer." : "Searching the index.")}
+                        </p>
                       ) : null}
-                      {turnError && <p className="mt-3 max-w-[62ch] text-13 text-danger">{turnError}</p>}
+                      {turnError && (
+                        <p className="mt-3 max-w-[62ch] text-13 text-danger">
+                          {turnError}
+                          <button
+                            type="button"
+                            onClick={() => void sendMessage({ text: textOf(turn.question) })}
+                            className="ml-2 text-chalk-dim underline underline-offset-2 hover:text-chalk"
+                          >
+                            Try again
+                          </button>
+                        </p>
+                      )}
                     </div>
                     {turn.meta && <TurnMeta meta={turn.meta} />}
                   </li>

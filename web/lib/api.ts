@@ -40,14 +40,21 @@ export function clearSession() {
   notify();
 }
 
+/** How a request failed: the server answered, the network did not, or we gave up waiting. */
+export type ApiErrorKind = "http" | "network" | "timeout";
+
 export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    public kind: ApiErrorKind = "http",
   ) {
     super(message);
   }
 }
+
+/** The API sleeps after 15 minutes idle and cold starts in under 30s; 45s means something is wrong. */
+export const REQUEST_TIMEOUT_MS = 45_000;
 
 /** Fetch against the API with the session token. A 401 clears the session, which sends the page to login. */
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -56,11 +63,18 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (session) headers.set("Authorization", `Bearer ${session.token}`);
   if (init.body && !(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, { ...init, headers });
+    res = await fetch(`${API_URL}${path}`, { ...init, headers, signal: controller.signal });
   } catch {
-    throw new ApiError("The API could not be reached. It may be starting up; try again in a few seconds.", 0);
+    if (controller.signal.aborted) {
+      throw new ApiError("The API did not respond in 45 seconds. It may be down.", 0, "timeout");
+    }
+    throw new ApiError("Could not reach the API. It may still be waking up.", 0, "network");
+  } finally {
+    clearTimeout(timer);
   }
   if (res.status === 401 && session) clearSession();
   if (res.status === 204) return undefined as T;
